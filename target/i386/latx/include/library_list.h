@@ -62,6 +62,7 @@ GO("libxcb-sync.so.1", libxcbsync)
 GO("libxcb-xinerama.so.0", libxcbxinerama)
 GO("libxcb-xinput.so.0", libxcbxinput)
 GO("libxcb-present.so.0", libxcbpresent)
+GO("libpthread.so.0", libpthread)
 
 
 GOALIAS("libxcb-cursor.so", libxcbcursor)
@@ -122,3 +123,4 @@ GOALIAS("libxcb-xtest.so", libxcbxtest)
 GOALIAS("libxcb-glx.so", libxcbglx)
 GOALIAS("libxcb-dri2.so", libxcbdri2)
 GOALIAS("libxcb-dri3.so", libxcbdri3)
+GOALIAS("libpthread.so", libpthread)
