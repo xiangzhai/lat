@@ -206,6 +206,17 @@ struct malloc_map {
     void* reallocp;
     void* h;
 };
+
+// for TLS
+typedef struct base_segment_s {
+    uintptr_t       base;
+    uint64_t        limit;
+    pthread_key_t   key;
+    uint8_t         present;
+    uint8_t         is32bits;
+    uint8_t         key_init;
+} base_segment_t;
+
 typedef struct box64context_s {
     path_collection_t   box64_path;     // PATH env. variable
     path_collection_t   box64_ld_lib;   // LD_LIBRARY_PATH env. variable
@@ -314,6 +325,11 @@ typedef struct box64context_s {
     elfheader_t         **deferedInitList;
     int                 deferedInitSz;
     int                 deferedInitCap;
+
+    pthread_key_t       tlskey;     // then tls key to have actual tlsdata
+    void*               tlsdata;    // the initial global tlsdata
+    int64_t             tlssize;    // wanted size of tlsdata
+    base_segment_t      segtls[16];
 
     uintptr_t           *auxval_start;
 

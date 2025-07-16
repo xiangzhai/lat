@@ -2041,6 +2041,19 @@ static int CalcLoadAddrNative(elfheader_t* head, size_t align)
                 head->paddr = (uintptr_t)head->PHEntries[i].p_paddr;
             if(head->vaddr > (uintptr_t)head->PHEntries[i].p_vaddr)
                 head->vaddr = (uintptr_t)head->PHEntries[i].p_vaddr;
+        } else if (head->PHEntries[i].p_type == PT_TLS) {
+            head->tlsaddr = head->PHEntries[i].p_vaddr;
+            head->tlssize = head->PHEntries[i].p_memsz;
+            head->tlsfilesize = head->PHEntries[i].p_filesz;
+            head->tlsalign = head->PHEntries[i].p_align;
+            // force alignement...
+            if (head->tlsalign > 1) {
+                while (head->tlssize & (head->tlsalign - 1)) {
+                    head->tlssize++;
+                }
+            }
+            printf_log(LOG_DEBUG, "DEBUG: %s:%d tlsaddr: 0x%lx tlssize: 0x%lx tlsfilesize: 0x%lx tlsalign: 0x%lx\n",
+                       __func__, __LINE__, head->tlsaddr, head->tlssize, head->tlsfilesize, head->tlsalign);
         }
     if(head->vaddr==~(uintptr_t)0 || head->paddr==~(uintptr_t)0) {
         printf_log(LOG_INFO, "Error: v/p Addr for Elf Load not set\n");
@@ -2050,6 +2063,24 @@ static int CalcLoadAddrNative(elfheader_t* head, size_t align)
     head->stackalign = 16;   // default align for stack
     return 0;
 }
+
+static int AddTLSPartition(box64context_t* context, int tlssize) {
+    int oldsize = context->tlssize;
+    // should in fact first try to map a hole, but rewinding all elfs and checking filled space, like with the mapmem utilities
+    context->tlssize += tlssize;
+    context->tlsdata = box_realloc(context->tlsdata, context->tlssize);
+    memmove(context->tlsdata + tlssize, context->tlsdata, oldsize);   // move to the top, using memmove as regions will probably overlap
+    memset(context->tlsdata, 0, tlssize);           // fill new space with 0 (not mandatory)
+    // clean GS segment for current emu
+    if (my_context) {
+        if (!(++context->sel_serial)) {
+            ++context->sel_serial;
+        }
+    }
+
+    return -context->tlssize;   // negative offset
+}
+
 static void init_main_elf(elfheader_t* elf_header,int fd, uintptr_t load_addr,
         size_t align)
 {
@@ -2065,6 +2096,8 @@ static void init_main_elf(elfheader_t* elf_header,int fd, uintptr_t load_addr,
         exit(-1);
     }
     close(fd);
+
+    elf_header->tlsbase = AddTLSPartition(my_context, elf_header->tlssize);
 
     AddSymbols(my_context->maplib, GetMapSymbol(my_context->maplib), GetWeakSymbol(my_context->maplib), GetLocalSymbol(my_context->maplib), elf_header);
 
