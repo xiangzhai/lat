@@ -81,9 +81,18 @@ static void* findkey_dtorFct(void* fct)
 EXPORT int my_pthread_key_create(pthread_key_t* key, void* dtor);
 EXPORT int my_pthread_key_create(pthread_key_t* key, void* dtor)
 {
+    printf_log(LOG_DEBUG, "DEBUG: %s:%d key: %p dtor: %p\n", __func__, __LINE__, key, dtor);
     int ret = pthread_key_create(key, findkey_dtorFct(dtor));
     return ret;
 }
 EXPORT int my___pthread_key_create(pthread_key_t* key, void* dtor) __attribute__((alias("my_pthread_key_create")));
+
+EXPORT int my_pthread_key_delete(pthread_key_t key);
+EXPORT int my_pthread_key_delete(pthread_key_t key)
+{
+    printf_log(LOG_DEBUG, "DEBUG: %s:%d key: %d\n", __func__, __LINE__, key);
+    int ret = pthread_key_delete(key);
+    return ret;
+}
 
 #include "wrappedlib_init.h"

@@ -106,6 +106,7 @@ void iFui(uintptr_t fnc);
 void iFuu(uintptr_t fnc);
 void iFuU(uintptr_t fnc);
 void iFup(uintptr_t fnc);
+void iFLp(uintptr_t fcn);
 void iFpi(uintptr_t fnc);
 void iFpu(uintptr_t fnc);
 void iFpl(uintptr_t fnc);

@@ -270,5 +270,10 @@ GO(sem_wait, iFp)
 //GO(system,
 //GO(__vfork,
 #endif
-GOM(__pthread_key_create, iFEpp)
-GOM(pthread_key_create, iFEpp)
+GOM(__pthread_key_create, iFpp)
+GOM(pthread_key_create, iFpp)
+GOM(pthread_key_delete, iFL)
+GO(__pthread_getspecific, pFL)
+GO(pthread_getspecific, pFL)
+GO(__pthread_setspecific, iFLp)
+GO(pthread_setspecific, iFLp)
