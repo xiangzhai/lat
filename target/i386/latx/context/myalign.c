@@ -2035,7 +2035,7 @@ static int CalcLoadAddrNative(elfheader_t* head, size_t align)
     head->memsz = 0;
     head->paddr = head->vaddr = ~(uintptr_t)0;
     head->align = align;
-    for (size_t i=0; i<head->numPHEntries; ++i)
+    for (size_t i=0; i<head->numPHEntries; ++i) {
         if(head->PHEntries[i].p_type == PT_LOAD) {
             if(head->paddr > (uintptr_t)head->PHEntries[i].p_paddr)
                 head->paddr = (uintptr_t)head->PHEntries[i].p_paddr;
@@ -2052,15 +2052,15 @@ static int CalcLoadAddrNative(elfheader_t* head, size_t align)
                     head->tlssize++;
                 }
             }
-            printf_log(LOG_DEBUG, "DEBUG: %s:%d tlsaddr: 0x%lx tlssize: 0x%lx tlsfilesize: 0x%lx tlsalign: 0x%lx\n",
-                       __func__, __LINE__, head->tlsaddr, head->tlssize, head->tlsfilesize, head->tlsalign);
         }
+    }
     if(head->vaddr==~(uintptr_t)0 || head->paddr==~(uintptr_t)0) {
         printf_log(LOG_INFO, "Error: v/p Addr for Elf Load not set\n");
         return 1;
     }
     head->stacksz = 1024*1024;          //1M stack size default?
     head->stackalign = 16;   // default align for stack
+    printf_log(LOG_DEBUG, "Elf TLS Memsize=%zu (align=%zu)\n", head->tlssize, head->tlsalign);
     return 0;
 }
 
@@ -2095,9 +2095,41 @@ static void init_main_elf(elfheader_t* elf_header,int fd, uintptr_t load_addr,
         FreeBox64Context(&my_context);
         exit(-1);
     }
-    close(fd);
 
     elf_header->tlsbase = AddTLSPartition(my_context, elf_header->tlssize);
+    for (size_t i = 0; i < elf_header->numPHEntries; ++i) {
+        if (elf_header->PHEntries[i].p_type == PT_TLS) {
+            elf_header->tlsaddr = elf_header->PHEntries[i].p_vaddr;
+            elf_header->tlssize = elf_header->PHEntries[i].p_memsz;
+            elf_header->tlsfilesize = elf_header->PHEntries[i].p_filesz;
+            elf_header->tlsalign = elf_header->PHEntries[i].p_align;
+            // force alignement...
+            if (elf_header->tlsalign > 1) {
+                while (elf_header->tlssize & (elf_header->tlsalign - 1)) {
+                    elf_header->tlssize++;
+                }
+            }
+            Elf64_Phdr* e = &elf_header->PHEntries[i];
+            char* dest = (char*)(my_context->tlsdata + my_context->tlssize + elf_header->tlsbase);
+            printf_log(LOG_DEBUG, "Loading TLS block #%zu @%p (0x%zx/0x%zx)\n", i, dest, e->p_filesz, e->p_memsz);
+            if (e->p_filesz) {
+                if (lseek(fd, e->p_offset, SEEK_SET) == -1) {
+                    printf_log(LOG_NONE, "Fail to seek PT_TLS part #%zu (offset=%zd)\n", i, e->p_offset);
+                    return;
+                }
+                if (read(fd, dest, e->p_filesz) == -1) {
+                    printf_log(LOG_NONE, "Fail to read PT_TLS part #%zu (size=%zd) to dest: %p\n", i, e->p_filesz, dest);
+                    return;
+                }
+            }
+            // zero'd difference between filesz and memsz
+            if (e->p_filesz != e->p_memsz) {
+                memset(dest + e->p_filesz, 0, e->p_memsz - e->p_filesz);
+            }
+        }
+    }
+    close(fd);
+    fd = -1;
 
     AddSymbols(my_context->maplib, GetMapSymbol(my_context->maplib), GetWeakSymbol(my_context->maplib), GetLocalSymbol(my_context->maplib), elf_header);
 

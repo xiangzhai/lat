@@ -13,6 +13,19 @@
 #include "wrapper.h"
 #include <pthread.h>
 
+void free_tlsdatasize(void* p)
+{
+    if (!p) {
+        return;
+    }
+    tlsdatasize_t* data = (tlsdatasize_t*)p;
+    box_free(data->ptr);
+    box_free(p);
+    if (my_context) {
+        pthread_setspecific(my_context->tlskey, NULL);
+    }
+}
+
 box64context_t *NewBox64Context(int argc)
 {
     // init and put default values
@@ -30,6 +43,24 @@ box64context_t *NewBox64Context(int argc)
     context->argc = argc;
     context->argv = (char**)box_calloc(context->argc+1, sizeof(char*));
     pthread_mutex_init(&context->mutex_lock, NULL);
+
+    pthread_key_create(&context->tlskey, free_tlsdatasize);
+
+    // init segments
+    for (int i = 0; i < 16; i++) {
+        context->segtls[i].limit = (uintptr_t)-1LL;
+    }
+    context->segtls[10].key_init = 0;    // 0x53 selector
+    context->segtls[10].present = 1;
+    context->segtls[8].key_init = 0;    // 0x43 selector
+    context->segtls[8].present = 1;
+    context->segtls[6].key_init = 0;    // 0x33 selector
+    context->segtls[6].present = 1;
+    context->segtls[5].key_init = 0;    // 0x2b selector
+    context->segtls[5].present = 1;
+    context->segtls[4].key_init = 0;    // 0x23 selector
+    context->segtls[4].present = 1;
+    context->segtls[4].is32bits = 1;
 
     return context;
 }
@@ -89,6 +120,16 @@ void FreeBox64Context(box64context_t** context)
 
     if(ctx->stack_clone)
         box_free(ctx->stack_clone);
+
+    void* ptr;
+    if ((ptr = pthread_getspecific(ctx->tlskey)) != NULL) {
+        free_tlsdatasize(ptr);
+    }
+    pthread_key_delete(ctx->tlskey);
+
+    if (ctx->tlsdata) {
+        box_free(ctx->tlsdata);
+    }
 
     free_neededlib(&ctx->neededlibs);
 
