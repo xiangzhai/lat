@@ -1402,40 +1402,47 @@ EXPORT void* my_XOpenDisplay(void* d)
 
     bridge_t* system = my_context->system;
 
-    #define GO(A, W)\
-    if(dpy->A)      \
-        if(!CheckBridged(system, dpy->A)) \
-            AddAutomaticBridge(system, W, dpy->A, 0); \
+    #define GO(A, W, N)                                         \
+    if (dpy->A)                                                 \
+        if (!CheckBridged(system, dpy->A)) {                    \
+            uintptr_t ret = AddBridge(system, W, dpy->A, 0, N); \
+            if (!hasAlternate(dpy->A)) {                        \
+                addAlternate(dpy->A, (void*)ret);               \
+            }                                                   \
+        }
 
-    #define GO2(A, B, W) \
-    if(dpy->A && dpy->A->B)  \
-        if(!CheckBridged(system, dpy->A->B)) \
-            AddAutomaticBridge(system, W, dpy->A->B, 0); \
+    #define GO2(A, B, W, N)                                        \
+    if (dpy->A && dpy->A->B)                                       \
+        if (!CheckBridged(system, dpy->A->B)) {                    \
+            uintptr_t ret = AddBridge(system, W, dpy->A->B, 0, N); \
+            if (!hasAlternate(dpy->A->B)) {                        \
+                addAlternate(dpy->A->B, (void*)ret);               \
+            }                                                      \
+        }
 
-
-    GO2(free_funcs, atoms, vFp)
-    GO2(free_funcs, modifiermap, iFp)
-    GO2(free_funcs, key_bindings, vFp)
-    GO2(free_funcs, context_db, vFp)
-    GO2(free_funcs, defaultCCCs, vFp)
-    GO2(free_funcs, clientCmaps, vFp)
-    GO2(free_funcs, intensityMaps, vFp)
-    GO2(free_funcs, im_filters, vFp)
-    GO2(free_funcs, xkb, vFp)
-    GO(resource_alloc, LFp)
-    GO(synchandler, iFp)
+    GO2(free_funcs, atoms, vFp, "atoms")
+    GO2(free_funcs, modifiermap, iFp, "modifiermap")
+    GO2(free_funcs, key_bindings, vFp, "key_bindings")
+    GO2(free_funcs, context_db, vFp, "context_db")
+    GO2(free_funcs, defaultCCCs, vFp, "defaultCCCs")
+    GO2(free_funcs, clientCmaps, vFp, "clientCmaps")
+    GO2(free_funcs, intensityMaps, vFp, "intensityMaps")
+    GO2(free_funcs, im_filters, vFp, "im_filters")
+    GO2(free_funcs, xkb, vFp, "xkb")
+    GO(resource_alloc, LFp, "resource_alloc")
+    GO(synchandler, iFp, "synchandler")
     //TODO: ext_procs?
     //TODO: event_vec?
     //TODO: wire_vec?
     //TODO: async_handlers?
-    GO2(lock_fns, lock_display, vFp);
-    GO2(lock_fns, unlock_display, vFp);
-    GO(idlist_alloc, vFppi)
+    GO2(lock_fns, lock_display, vFp, "lock_display");
+    GO2(lock_fns, unlock_display, vFp, "unlock_display");
+    GO(idlist_alloc, vFppi, "idlist_alloc")
     //TODO: error_vec?
     //TODO: flushes
     //TODO: im_fd_info?
     //TODO: conn_watchers
-    GO(savedsynchandler, iFp)
+    GO(savedsynchandler, iFp, "savedsynchandler")
     //TODO: generic_event_vec?
     //TODO: generic_event_copy_vec?
 

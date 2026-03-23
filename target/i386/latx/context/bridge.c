@@ -72,6 +72,7 @@ void FreeBridge(bridge_t** bridge)
 
 uintptr_t AddBridge(bridge_t* bridge, wrapper_t w, void* fnc, int N, const char* name)
 {
+    printf_log(LOG_DEBUG, "DEBUG: %s:%d for %p %s\n", __func__, __LINE__, fnc, name);
     brick_t *b = NULL;
     int sz = -1;
         b = bridge->last;
