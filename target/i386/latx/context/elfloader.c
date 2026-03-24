@@ -503,10 +503,11 @@ int CheckEnableKZT(elfheader_t* h, char** target_argv, int target_argc)
             while ((entry = readdir(dir)) != NULL) {
                 if (entry->d_type == DT_REG) {  // Check if it's a regular file
                     if (!strncmp(entry->d_name, p, strlen(p))) {
-                        printf_log(LOG_INFO, "File starting with '%s' found: %s at %s\n", p, entry->d_name, lib_path.paths[j]);
+                        printf("File starting with '%s' found: %s at %s\n", p, entry->d_name, lib_path.paths[j]);
                         closedir(dir);
                         FreeCollection(&lib_path);
-                        return 0;
+                        printf("Force enable KZT\n");
+                        return 1;
                     }
                 }
             }

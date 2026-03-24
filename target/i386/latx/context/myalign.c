@@ -2088,6 +2088,7 @@ int kzt_init(char** argv, int argc,char** target_argv, int target_argc,
     if (option_kzt == 1 && elf_header) {
         option_kzt = CheckEnableKZT(elf_header, target_argv, target_argc);
     }
+    printf("option_kzt=%d\n", option_kzt);
     const char* prog = argv[1];
     LoadEnvVars(my_context);
     my_context->box64path = ResolveFile(argv[0], &my_context->box64_path);

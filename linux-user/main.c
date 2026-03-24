@@ -74,7 +74,7 @@ int mydebug = 1;
 #include "wrappertbbridge.h"
 box64context_t* my_context = NULL;
 elfheader_t* elf_header = NULL;
-int relocation_log = 0; //LOG_NONE;
+int relocation_log = 10; //LOG_NONE;
 int relocation_dump = 0;
 int box64_pagesize;
 uintptr_t box64_load_addr = 0;

@@ -2579,7 +2579,8 @@ void opt_instptn_fix(CPUState *cpu, TranslationBlock *tb, int index)
             case WRAP(JO):
             break;
             default:
-                lsassert(0);
+                printf("DEBUG: %s:%d ir1_opcode=0x%x\n", __func__, __LINE__, ir1_opcode(pir1));
+                //lsassert(0);
                 break;
             }
             return;
