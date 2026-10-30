@@ -98,6 +98,15 @@ endif
 
 if 'i386-linux-user' in target_dirs
   latx_integration_tests += [{
+    'name': 'test-vmaskmov-page-permission-i386',
+    'runner': find_program('../../test-vmaskmov-page-permission-i386.sh'),
+    'args': [
+      emulators['latx-i386'],
+      files('../../vmaskmov-page-permission-i386.asm'),
+    ],
+    'timeout': 180,
+  }]
+  latx_integration_tests += [{
     'name': 'test-ymmh-conditional-save-i386',
     'runner': find_program('../../test-avx-regressions.py'),
     'args': ['--guest-bits', '32', emulators['latx-i386'],

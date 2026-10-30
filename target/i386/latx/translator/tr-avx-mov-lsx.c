@@ -631,7 +631,6 @@ void latx_masked_mem_op_128(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
     IR2_OPND mask_bits = ra_alloc_itemp();
     IR2_OPND selected = ra_alloc_itemp();
     IR2_OPND all_bits = ra_alloc_itemp();
-    IR2_OPND element = ra_alloc_itemp();
     IR2_OPND label_none = ra_alloc_label();
     IR2_OPND label_full = ra_alloc_label();
     IR2_OPND label_done = ra_alloc_label();
@@ -657,13 +656,20 @@ void latx_masked_mem_op_128(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
     la_beqz(selected, label_none);
     li_d(all_bits, all);
     la_beq(selected, all_bits, label_full);
+    ra_free_temp(all_bits);
 
     for (i = 0; i < lanes; i++) {
         int off = base_off + i * (elem_bits / 8);
+        IR2_OPND element;
 
         label_skip[i] = ra_alloc_label();
         la_bstrpick_d(selected, mask_bits, i, i);
         la_beqz(selected, label_skip[i]);
+        ra_free_temp(selected);
+        gen_test_page_flag(address, off,
+                           store ? PAGE_WRITE | PAGE_WRITE_ORG : PAGE_READ,
+                           elem_bits / 8);
+        element = ra_alloc_itemp();
         if (store) {
             if (elem_bits == 32) {
                 la_vpickve2gr_w(element, value, i);
@@ -681,11 +687,17 @@ void latx_masked_mem_op_128(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
                 la_vinsgr2vr_d(value, element, i);
             }
         }
+        ra_free_temp(element);
         la_label(label_skip[i]);
+        if (i + 1 < lanes) {
+            selected = ra_alloc_itemp();
+        }
     }
     la_b(label_done);
 
     la_label(label_full);
+    gen_test_page_flag(address, base_off,
+                       store ? PAGE_WRITE | PAGE_WRITE_ORG : PAGE_READ, 16);
     if (store) {
         la_vst(value, address, base_off);
     } else {
@@ -696,9 +708,6 @@ void latx_masked_mem_op_128(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
     la_label(label_none);
     la_label(label_done);
 
-    ra_free_temp(element);
-    ra_free_temp(all_bits);
-    ra_free_temp(selected);
     ra_free_temp(mask_bits);
     ra_free_temp(mask_tmp);
 }
@@ -713,7 +722,6 @@ void latx_masked_mem_op_256(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
     IR2_OPND mask_bits = ra_alloc_itemp();
     IR2_OPND selected = ra_alloc_itemp();
     IR2_OPND all_bits = ra_alloc_itemp();
-    IR2_OPND element = ra_alloc_itemp();
     IR2_OPND label_none = ra_alloc_label();
     IR2_OPND label_full = ra_alloc_label();
     IR2_OPND label_done = ra_alloc_label();
@@ -748,13 +756,20 @@ void latx_masked_mem_op_256(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
     la_beqz(selected, label_none);
     li_d(all_bits, all);
     la_beq(selected, all_bits, label_full);
+    ra_free_temp(all_bits);
 
     for (i = 0; i < lanes; i++) {
         int off = base_off + i * (elem_bits / 8);
+        IR2_OPND element;
 
         label_skip[i] = ra_alloc_label();
         la_bstrpick_d(selected, mask_bits, i, i);
         la_beqz(selected, label_skip[i]);
+        ra_free_temp(selected);
+        gen_test_page_flag(address, off,
+                           store ? PAGE_WRITE | PAGE_WRITE_ORG : PAGE_READ,
+                           elem_bits / 8);
+        element = ra_alloc_itemp();
         if (store) {
             if (elem_bits == 32) {
                 la_xvpickve2gr_w(element, value, i);
@@ -772,11 +787,18 @@ void latx_masked_mem_op_256(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
                 la_xvinsgr2vr_d(value, element, i);
             }
         }
+        ra_free_temp(element);
         la_label(label_skip[i]);
+        if (i + 1 < lanes) {
+            selected = ra_alloc_itemp();
+        }
     }
     la_b(label_done);
 
     la_label(label_full);
+    gen_test_page_flag(address, base_off,
+                       store ? PAGE_WRITE | PAGE_WRITE_ORG : PAGE_READ,
+                       bits / 8);
     if (bits == 256) {
         if (store) {
             la_xvst(value, address, base_off);
@@ -795,9 +817,6 @@ void latx_masked_mem_op_256(IR2_OPND address, IR2_OPND mask, IR2_OPND value,
     la_label(label_none);
     la_label(label_done);
 
-    ra_free_temp(element);
-    ra_free_temp(all_bits);
-    ra_free_temp(selected);
     ra_free_temp(mask_bits);
     ra_free_temp(mask_tmp);
 }
